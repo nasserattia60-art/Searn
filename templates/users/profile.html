@@ -1,0 +1,47 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Profile - Searn{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">Profile</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Username:</strong></div>
+                    <div class="col-sm-8">{{ user.username }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Email:</strong></div>
+                    <div class="col-sm-8">{{ user.email }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>First Name:</strong></div>
+                    <div class="col-sm-8">{{ user.first_name|default:"Not set" }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Last Name:</strong></div>
+                    <div class="col-sm-8">{{ user.last_name|default:"Not set" }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Date Joined:</strong></div>
+                    <div class="col-sm-8">{{ user.date_joined|date:"F j, Y" }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-sm-4"><strong>Last Login:</strong></div>
+                    <div class="col-sm-8">{{ user.last_login|date:"F j, Y H:i" }}</div>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'edit_profile' %}" class="btn btn-primary">Edit Profile</a>
+                    <a href="{% url 'change_password' %}" class="btn btn-warning">Change Password</a>
+                    <a href="{% url 'delete_account' %}" class="btn btn-danger">Delete Account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

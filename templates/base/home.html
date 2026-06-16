@@ -1,0 +1,21 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Home - Searn{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1>Welcome to Searn</h1>
+    <p class="lead">Your authentication system is up and running.</p>
+    {% if user.is_authenticated %}
+        <div class="mt-4">
+            <p>Hello, <strong>{{ user.username }}</strong>!</p>
+            <a href="{% url 'profile' %}" class="btn btn-primary">Go to Profile</a>
+        </div>
+    {% else %}
+        <div class="mt-4">
+            <a href="{% url 'login' %}" class="btn btn-primary me-2">Login</a>
+            <a href="{% url 'register' %}" class="btn btn-success">Register</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

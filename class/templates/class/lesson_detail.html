@@ -1,0 +1,189 @@
+{% extends 'users/base.html' %}
+
+{% block title %}{{ lesson.title }} - {{ class_room.name }} - Searn{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'class-home' %}">Classes</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'class-detail' class_room.id %}">{{ class_room.name }}</a></li>
+        <li class="breadcrumb-item active">Lesson {{ lesson.order }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Video + Subtitles Column -->
+    <div class="col-lg-8">
+        <div class="card mb-3">
+            <div class="card-body p-0">
+                {% if video_url %}
+                    <video id="video-player" class="w-100" controls style="max-height: 500px; background: #000;" preload="metadata">
+                        <source src="{{ video_url }}" type="video/mp4">
+                        {% if subtitles %}
+                            <track label="Subtitles" kind="subtitles" srclang="en" src="{% url 'lesson-subtitles' lesson.uuid %}" default>
+                        {% endif %}
+                        Your browser does not support the video tag.
+                    </video>
+                {% else %}
+                    <div class="text-center py-5 bg-dark text-white">
+                        <h4>Could not load video</h4>
+                        <p class="text-muted">The video URL could not be retrieved. It may be private or unavailable.</p>
+                        <a href="https://www.youtube.com/watch?v={{ lesson.video_id }}" target="_blank" class="btn btn-danger">
+                            Watch on YouTube
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <h4>{{ lesson.title }}</h4>
+                <p class="text-muted small">Video ID: {{ lesson.video_id }}</p>
+                <div class="d-flex justify-content-between mt-3">
+                    <div>
+                        {% if prev_lesson %}
+                            <a href="{% url 'lesson-detail' prev_lesson.uuid %}" class="btn btn-outline-primary">
+                                &larr; Previous
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% if next_lesson %}
+                            <a href="{% url 'lesson-detail' next_lesson.uuid %}" class="btn btn-primary">
+                                Next &rarr;
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtitles Below Video -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Subtitles / Transcript</h5>
+                <div>
+                    <span class="badge bg-info me-2" id="sub-count">{{ subtitles|length }} lines</span>
+                    <span class="badge bg-secondary" id="current-sub-status">--:--</span>
+                </div>
+            </div>
+            <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;" id="subtitles-container">
+                {% if subtitles %}
+                    <div class="list-group list-group-flush" id="subtitle-list">
+                        {% for sub in subtitles %}
+                            <a href="#"
+                               class="list-group-item list-group-item-action subtitle-line py-2"
+                               data-start="{{ sub.start }}"
+                               data-end="{{ sub.end }}"
+                               data-index="{{ forloop.counter0 }}">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted timestamp-badge">
+                                        {{ sub.start|floatformat:0|add:"0"|time:"H:i:s" }} →
+                                        {{ sub.end|floatformat:0|add:"0"|time:"H:i:s" }}
+                                    </small>
+                                </div>
+                                <p class="mb-0 mt-1 subtitle-text">{{ sub.text }}</p>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">No subtitles available for this video.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Lessons Sidebar -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">All Lessons</h5>
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 600px; overflow-y: auto;">
+                {% for l in class_room.lessons.all %}
+                    <a href="{% url 'lesson-detail' l.uuid %}"
+                       class="list-group-item list-group-item-action d-flex align-items-center {% if l.id == lesson.id %}active{% endif %}">
+                        <span class="badge bg-secondary me-2">{{ l.order }}</span>
+                        <small class="{% if l.id == lesson.id %}text-white{% endif %}">{{ l.title|truncatechars:45 }}</small>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if subtitles %}
+<script>
+// === Subtitle Highlighting for <video> element ===
+const video = document.getElementById('video-player');
+const subtitleLines = document.querySelectorAll('.subtitle-line');
+const subtitlesData = {{ subtitles_json|safe }};
+const statusBadge = document.getElementById('current-sub-status');
+
+let activeIndex = -1;
+
+function updateSubtitles() {
+    if (!video || !subtitlesData.length) return;
+
+    const currentTime = video.currentTime;
+    let newIndex = -1;
+
+    for (let i = 0; i < subtitlesData.length; i++) {
+        if (currentTime >= subtitlesData[i].start && currentTime <= subtitlesData[i].end) {
+            newIndex = i;
+            break;
+        }
+    }
+
+    // Remove highlight from previous
+    if (activeIndex !== -1 && subtitleLines[activeIndex]) {
+        subtitleLines[activeIndex].classList.remove('active', 'bg-warning-subtle');
+    }
+
+    // Apply highlight to current
+    if (newIndex !== -1 && subtitleLines[newIndex]) {
+        subtitleLines[newIndex].classList.add('active', 'bg-warning-subtle');
+        // Scroll into view
+        subtitleLines[newIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Update status badge
+    if (newIndex !== -1) {
+        const sub = subtitlesData[newIndex];
+        const startStr = formatTime(sub.start);
+        statusBadge.textContent = startStr;
+    } else {
+        statusBadge.textContent = formatTime(currentTime);
+    }
+
+    activeIndex = newIndex;
+}
+
+function formatTime(seconds) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+// Listen for time updates
+if (video) {
+    video.addEventListener('timeupdate', updateSubtitles);
+}
+
+// Click subtitle to seek
+subtitleLines.forEach(function(line) {
+    line.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (video) {
+            const start = parseFloat(this.dataset.start);
+            video.currentTime = start;
+            video.play();
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

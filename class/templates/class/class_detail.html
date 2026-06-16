@@ -1,0 +1,72 @@
+{% extends 'users/base.html' %}
+
+{% block title %}{{ class_room.name }} - Searn{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'class-home' %}">Classes</a></li>
+            <li class="breadcrumb-item active">{{ class_room.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>{{ class_room.name }}</h1>
+            <p class="text-muted">{{ class_room.description }}</p>
+        </div>
+        <div>
+            {% if is_member %}
+                <form method="post" action="{% url 'leave-class' class_room.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Leave Class</button>
+                </form>
+            {% else %}
+                <form method="post" action="{% url 'join-class' class_room.id %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Join Class</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if is_member %}
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Lessons ({{ lessons|length }})</h5>
+            <a href="{{ class_room.studylist_url }}" target="_blank" class="btn btn-sm btn-outline-danger">
+                View on YouTube
+            </a>
+        </div>
+        {% if lessons %}
+            <div class="list-group list-group-flush">
+                {% for lesson in lessons %}
+                    <a href="{% url 'lesson-detail' lesson.uuid %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                        <span class="badge bg-primary rounded-pill me-3">{{ lesson.order }}</span>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">{{ lesson.title }}</h6>
+                        </div>
+                        <span class="text-muted small me-2">{{ lesson.video_id }}</span>
+                        <span class="badge bg-secondary">Play</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card-body text-center py-4">
+                <p class="text-muted mb-0">No lessons available yet.</p>
+                {% if not error %}
+                    <a href="{{ class_room.studylist_url }}" target="_blank" class="btn btn-outline-danger mt-2">
+                        Open playlist on YouTube
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        Join this class to view the lessons.
+    </div>
+{% endif %}
+{% endblock %}

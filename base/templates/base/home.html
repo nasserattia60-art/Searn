@@ -1,0 +1,50 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Home - Searn{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4">Welcome to 📚 Searn</h1>
+    <p class="lead text-muted">Learn from YouTube playlists with subtitles and progress tracking.</p>
+
+    {% if user.is_authenticated %}
+        <div class="mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center py-4">
+                            <h5 class="card-title">📂 My Classes</h5>
+                            <p class="card-text text-muted">Browse your enrolled classes and continue learning.</p>
+                            <a href="{% url 'class-home' %}" class="btn btn-primary">Go to Classes</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center py-4">
+                            <h5 class="card-title">👤 Profile</h5>
+                            <p class="card-text text-muted">View and edit your profile settings.</p>
+                            <a href="{% url 'profile' %}" class="btn btn-outline-primary">View Profile</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center py-4">
+                            <h5 class="card-title">📖 Create Class</h5>
+                            <p class="card-text text-muted">Create a new class from a YouTube playlist.</p>
+                            <a href="{% url 'create-class' %}" class="btn btn-success">Create Class</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="mt-5">
+            <p class="mb-4">Get started by creating an account or logging in.</p>
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-2">Register</a>
+            <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">Login</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
