@@ -178,9 +178,28 @@ function updateSubtitles() {
     activeIndex = newIndex;
 }
 
-if (video) {
-    video.addEventListener('timeupdate', updateSubtitles);
-}
+    if (video) {
+        video.addEventListener('timeupdate', updateSubtitles);
+    }
+
+    // Auto-save position every 10 seconds
+    setInterval(function() {
+        if (video && !video.paused && video.currentTime > 0) {
+            fetch("{% url 'save-position' lesson.uuid %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: 'position=' + video.currentTime
+            });
+        }
+    }, 10000);
+
+    // Resume from last saved position
+    if (video && {{ progress.last_position|default:"0"|floatformat:"0" }} > 1) {
+        video.currentTime = {{ progress.last_position }};
+    }
 
 subtitleLines.forEach(function(line) {
     line.addEventListener('click', function(e) {

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from django.utils import timezone
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -21,7 +21,7 @@ def _ensure_lesson_cache(lesson):
         lesson.cached_subtitles_vtt = vtt_content
 
     if lesson.cached_video_url or lesson.cached_subtitles_vtt:
-        lesson.cached_at = datetime.now()
+        lesson.cached_at = timezone.now()
         lesson.save(update_fields=['cached_video_url', 'cached_subtitles_vtt', 'cached_at'])
 
 
@@ -191,7 +191,7 @@ def mark_completed(request, lesson_uuid):
         user=request.user,
     )
     progress.completed = not progress.completed
-    progress.completed_at = datetime.now() if progress.completed else None
+    progress.completed_at = timezone.now() if progress.completed else None
     progress.save()
     status = "completed" if progress.completed else "uncompleted"
     messages.success(request, f"Lesson marked as {status}.")
