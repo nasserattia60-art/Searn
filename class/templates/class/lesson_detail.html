@@ -28,28 +28,30 @@
                     <div class="text-center py-5 bg-dark text-white">
                         <h4>Could not load video</h4>
                         <p class="text-muted">The video URL could not be retrieved. It may be private or unavailable.</p>
-                        <a href="https://www.youtube.com/watch?v={{ lesson.video_id }}" target="_blank" class="btn btn-danger">
-                            Watch on YouTube
-                        </a>
+                        <a href="https://www.youtube.com/watch?v={{ lesson.video_id }}" target="_blank" class="btn btn-danger">Watch on YouTube</a>
                     </div>
                 {% endif %}
             </div>
             <div class="card-body">
-                <h4>{{ lesson.title }}</h4>
-                <p class="text-muted small">Video ID: {{ lesson.video_id }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ lesson.title }}</h4>
+                    <form method="post" action="{% url 'mark-completed' lesson.uuid %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm {% if progress.completed %}btn-success{% else %}btn-outline-success{% endif %}">
+                            {% if progress.completed %}✓ Completed{% else %}Mark Complete{% endif %}
+                        </button>
+                    </form>
+                </div>
+                <p class="text-muted small mt-2">Video ID: {{ lesson.video_id }}</p>
                 <div class="d-flex justify-content-between mt-3">
                     <div>
                         {% if prev_lesson %}
-                            <a href="{% url 'lesson-detail' prev_lesson.uuid %}" class="btn btn-outline-primary">
-                                &larr; Previous
-                            </a>
+                            <a href="{% url 'lesson-detail' prev_lesson.uuid %}" class="btn btn-outline-primary">&larr; Previous</a>
                         {% endif %}
                     </div>
                     <div>
                         {% if next_lesson %}
-                            <a href="{% url 'lesson-detail' next_lesson.uuid %}" class="btn btn-primary">
-                                Next &rarr;
-                            </a>
+                            <a href="{% url 'lesson-detail' next_lesson.uuid %}" class="btn btn-primary">Next &rarr;</a>
                         {% endif %}
                     </div>
                 </div>
@@ -75,10 +77,7 @@
                                data-end="{{ sub.end }}"
                                data-index="{{ forloop.counter0 }}">
                                 <div class="d-flex justify-content-between">
-                                    <small class="text-muted timestamp-badge">
-                                        {{ sub.start|floatformat:0|add:"0"|time:"H:i:s" }} →
-                                        {{ sub.end|floatformat:0|add:"0"|time:"H:i:s" }}
-                                    </small>
+                                    <small class="text-muted timestamp-badge" data-seconds="{{ sub.start }}">00:00</small>
                                 </div>
                                 <p class="mb-0 mt-1 subtitle-text">{{ sub.text }}</p>
                             </a>
@@ -114,6 +113,23 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+// Format all subtitle timestamps on page load
+document.querySelectorAll('.timestamp-badge').forEach(function(el) {
+    const seconds = parseFloat(el.dataset.seconds);
+    if (!isNaN(seconds)) {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = Math.floor(seconds % 60);
+        if (h > 0) {
+            el.textContent = h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        } else {
+            el.textContent = m + ':' + String(s).padStart(2, '0');
+        }
+    }
+});
+</script>
+
 {% if subtitles %}
 <script>
 // === Subtitle Highlighting for <video> element ===
@@ -137,43 +153,35 @@ function updateSubtitles() {
         }
     }
 
-    // Remove highlight from previous
     if (activeIndex !== -1 && subtitleLines[activeIndex]) {
         subtitleLines[activeIndex].classList.remove('active', 'bg-warning-subtle');
     }
 
-    // Apply highlight to current
     if (newIndex !== -1 && subtitleLines[newIndex]) {
         subtitleLines[newIndex].classList.add('active', 'bg-warning-subtle');
-        // Scroll into view
         subtitleLines[newIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
-    // Update status badge
     if (newIndex !== -1) {
         const sub = subtitlesData[newIndex];
-        const startStr = formatTime(sub.start);
-        statusBadge.textContent = startStr;
+        const h = Math.floor(sub.start / 3600);
+        const m = Math.floor((sub.start % 3600) / 60);
+        const s = Math.floor(sub.start % 60);
+        statusBadge.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     } else {
-        statusBadge.textContent = formatTime(currentTime);
+        const h = Math.floor(currentTime / 3600);
+        const m = Math.floor((currentTime % 3600) / 60);
+        const s = Math.floor(currentTime % 60);
+        statusBadge.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     }
 
     activeIndex = newIndex;
 }
 
-function formatTime(seconds) {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
-
-// Listen for time updates
 if (video) {
     video.addEventListener('timeupdate', updateSubtitles);
 }
 
-// Click subtitle to seek
 subtitleLines.forEach(function(line) {
     line.addEventListener('click', function(e) {
         e.preventDefault();

@@ -1,4 +1,5 @@
 {% extends 'users/base.html' %}
+{% load class_extras %}
 
 {% block title %}{{ class_room.name }} - Searn{% endblock %}
 
@@ -46,7 +47,14 @@
                     <a href="{% url 'lesson-detail' lesson.uuid %}" class="list-group-item list-group-item-action d-flex align-items-center">
                         <span class="badge bg-primary rounded-pill me-3">{{ lesson.order }}</span>
                         <div class="flex-grow-1">
-                            <h6 class="mb-0">{{ lesson.title }}</h6>
+                            <h6 class="mb-0">
+                                {{ lesson.title }}
+                                {% with prog=progress_map|dict_key:lesson.id %}
+                                    {% if prog and prog.completed %}
+                                        <span class="badge bg-success ms-2">✓</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </h6>
                         </div>
                         <span class="text-muted small me-2">{{ lesson.video_id }}</span>
                         <span class="badge bg-secondary">Play</span>
@@ -56,11 +64,6 @@
         {% else %}
             <div class="card-body text-center py-4">
                 <p class="text-muted mb-0">No lessons available yet.</p>
-                {% if not error %}
-                    <a href="{{ class_room.studylist_url }}" target="_blank" class="btn btn-outline-danger mt-2">
-                        Open playlist on YouTube
-                    </a>
-                {% endif %}
             </div>
         {% endif %}
     </div>

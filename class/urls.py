@@ -8,4 +8,6 @@ urlpatterns = [
     path('<int:class_id>/leave/', views.leave_class, name='leave-class'),
     path('lesson/<uuid:lesson_uuid>/', views.lesson_detail, name='lesson-detail'),
     path('lesson/<uuid:lesson_uuid>/subtitles/', views.lesson_subtitles, name='lesson-subtitles'),
+    path('lesson/<uuid:lesson_uuid>/complete/', views.mark_completed, name='mark-completed'),
+    path('lesson/<uuid:lesson_uuid>/position/', views.save_position, name='save-position'),
 ]

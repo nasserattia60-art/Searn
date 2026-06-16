@@ -98,3 +98,16 @@ class UserDeleteAccountForm(forms.Form):
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         required=True, label="Enter your password to confirm"
     )
+
+class UserSetNewPasswordForm(forms.Form):
+    new_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        min_length=8, required=True,
+        help_text="Password must be at least 8 characters long.",
+        max_length=128, label="New Password"
+    )
+    confirm_new_password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        min_length=8, required=True,
+        max_length=128, label="Confirm New Password"
+    )
