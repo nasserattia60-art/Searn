@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}الاختبارات - {{ class_room.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5" dir="rtl">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>
+                <i class="fas fa-list-check"></i>
+                اختبارات {{ class_room.name }}
+            </h2>
+            <p class="text-muted">{{ quizzes|length }} اختبار متاح</p>
+        </div>
+    </div>
+
+    {% if quizzes %}
+    <div class="row">
+        {% for item in quizzes %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 {% if item.status == 'completed' %}border-success{% endif %}">
+                <div class="card-header {% if item.status == 'completed' %}bg-success{% else %}bg-primary{% endif %} text-white">
+                    <h5 class="card-title mb-0">
+                        {% if item.status == 'completed' %}
+                        <i class="fas fa-check-circle"></i>
+                        {% else %}
+                        <i class="fas fa-file-alt"></i>
+                        {% endif %}
+                        {{ item.quiz.title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ item.lesson.title }}</p>
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-question-circle"></i>
+                            {{ item.quiz.get_questions_count }} أسئلة
+                        </small>
+                    </div>
+
+                    {% if item.attempt %}
+                    <div class="alert alert-info mb-3">
+                        <strong>نتيجتك الأخيرة:</strong> {{ item.attempt.score }}%
+                        {% if item.attempt.passed %}
+                        <span class="badge badge-success">✓ نجحت</span>
+                        {% else %}
+                        <span class="badge badge-warning">✗ لم تنجح</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {% if item.attempt %}{{ item.attempt.score }}{% else %}0{% endif %}%">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    {% if item.status == 'completed' and item.attempt.passed %}
+                    <a href="{% url 'quiz-results' item.lesson.id %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-eye"></i> عرض النتائج
+                    </a>
+                    <a href="{% url 'quiz-retry' item.lesson.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-redo"></i> إعادة المحاولة
+                    </a>
+                    {% else %}
+                    <a href="{% url 'quiz-detail' item.lesson.id %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-play"></i> بدء الاختبار
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        لا توجد اختبارات متاحة حالياً في هذا الفصل.
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'class-detail' class_room.id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> العودة إلى الفصل
+        </a>
+    </div>
+</div>
+
+<style>
+    [dir="rtl"] .card {
+        text-align: right;
+    }
+    
+    [dir="rtl"] .progress {
+        direction: rtl;
+    }
+</style>
+{% endblock %}

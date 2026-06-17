@@ -213,6 +213,94 @@ def _format_vtt_time(seconds):
     return f"{h:02d}:{m:02d}:{s:06.3f}"
 
 
+def create_quiz_from_lesson(lesson, use_ai=True, num_questions=5):
+    """
+    Create a quiz for a lesson based on its cached subtitles.
+    Uses AI to generate questions applying learning science principles.
+    
+    Args:
+        lesson: Lesson instance
+        use_ai: Whether to use AI for generation (False = test mode)
+        num_questions: Number of questions to generate
+    
+    Returns:
+        Quiz instance or None if failed
+    """
+    from .models import Quiz, QuizQuestion, QuizAnswer
+    from .quiz_service import QuizGenerationService
+    
+    try:
+        # Ensure subtitles are cached
+        if not lesson.cached_subtitles_vtt:
+            _, vtt_content = get_video_subtitles(lesson.video_id)
+            if not vtt_content:
+                print(f"No subtitles found for lesson: {lesson.title}")
+                return None
+            lesson.cached_subtitles_vtt = vtt_content
+            lesson.save(update_fields=['cached_subtitles_vtt'])
+        
+        # Check if quiz already exists
+        if hasattr(lesson, 'quiz'):
+            print(f"Quiz already exists for lesson: {lesson.title}")
+            return lesson.quiz
+        
+        # Generate quiz data using AI or test mode
+        service = QuizGenerationService()
+        
+        if use_ai:
+            quiz_data = service.generate_quiz(
+                lesson_title=lesson.title,
+                subtitles_json=lesson.cached_subtitles_vtt,
+                num_questions=num_questions,
+                language='ar'
+            )
+        else:
+            quiz_data = service.get_test_quiz()
+        
+        # Validate quiz structure
+        if not service.validate_quiz_structure(quiz_data):
+            raise ValueError("Invalid quiz structure from AI")
+        
+        # Create Quiz object
+        quiz = Quiz.objects.create(
+            lesson=lesson,
+            title=quiz_data.get('quiz_title', f"{lesson.title} - Quiz"),
+            description=quiz_data.get('description', ''),
+            source_subtitles=lesson.cached_subtitles_vtt,
+            ai_model_used='gemini-1.5-flash' if use_ai else 'test',
+            generated_by_ai=use_ai
+        )
+        
+        # Create QuizQuestions and QuizAnswers
+        for q_data in quiz_data.get('questions', []):
+            question = QuizQuestion.objects.create(
+                quiz=quiz,
+                question_text=q_data['question_text'],
+                question_type=q_data['question_type'],
+                explanation=q_data.get('explanation', ''),
+                order=q_data.get('question_number', 0)
+            )
+            
+            # Add answers for multiple choice and true/false
+            if 'answers' in q_data:
+                for ans_order, ans_data in enumerate(q_data['answers']):
+                    QuizAnswer.objects.create(
+                        question=question,
+                        answer_text=ans_data['answer_text'],
+                        is_correct=ans_data.get('is_correct', False),
+                        order=ans_order
+                    )
+        
+        print(f"Quiz created successfully for: {lesson.title}")
+        return quiz
+        
+    except Exception as e:
+        print(f"Error creating quiz for lesson {lesson.title}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 if __name__ == "__main__":
     import sys
 

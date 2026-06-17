@@ -47,6 +47,9 @@
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
                         <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="{% url 'class-home' %}">Classes</a>
                         </li>
                     {% endif %}

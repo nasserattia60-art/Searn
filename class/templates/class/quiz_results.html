@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}نتائج {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5" dir="rtl">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            
+            <!-- Score Display -->
+            <div class="card mb-4 {% if passed %}border-success{% else %}border-warning{% endif %}">
+                <div class="card-header {% if passed %}bg-success{% else %}bg-warning{% endif %} text-white">
+                    <h3 class="mb-0">
+                        {% if passed %}
+                        <i class="fas fa-trophy"></i> تهانينا! لقد نجحت!
+                        {% else %}
+                        <i class="fas fa-exclamation-triangle"></i> لم تنجح في هذا الاختبار
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-4 {% if passed %}text-success{% else %}text-warning{% endif %}">
+                        {{ score }}%
+                    </div>
+                    <p class="lead">
+                        {{ attempt.correct_answers }}/{{ attempt.total_questions }} إجابات صحيحة
+                    </p>
+                    <hr>
+                    <p class="text-muted mb-0">
+                        <strong>درجة النجاح المطلوبة:</strong> {{ passing_score }}%
+                    </p>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">الإجابات الصحيحة</h6>
+                            <h3 class="text-success">{{ attempt.correct_answers }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">الإجابات الخاطئة</h6>
+                            <h3 class="text-danger">{{ attempt.total_questions|add:attempt.correct_answers|add:"-"|add:attempt.total_questions }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Results -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">تفاصيل الإجابات</h5>
+                </div>
+                <div class="card-body">
+                    {% for response in responses %}
+                    <div class="mb-4 pb-4 {% if not forloop.last %}border-bottom{% endif %}">
+                        <h6 class="mb-2">
+                            السؤال {{ response.question.order }}:
+                            {% if response.is_correct %}
+                            <span class="badge badge-success">✓ صحيح</span>
+                            {% else %}
+                            <span class="badge badge-danger">✗ خطأ</span>
+                            {% endif %}
+                        </h6>
+                        
+                        <p class="mb-2">
+                            <strong>{{ response.question.question_text }}</strong>
+                        </p>
+
+                        {% if response.selected_answer %}
+                        <p class="mb-2">
+                            <strong>إجابتك:</strong>
+                            {{ response.selected_answer.answer_text }}
+                        </p>
+                        {% endif %}
+
+                        {% if response.free_text_answer %}
+                        <p class="mb-2">
+                            <strong>إجابتك:</strong>
+                            {{ response.free_text_answer }}
+                        </p>
+                        {% endif %}
+
+                        <!-- Explanation -->
+                        <div class="alert alert-info mb-0">
+                            <strong>الشرح التعليمي:</strong>
+                            <p class="mb-0">{{ response.question.explanation }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-grid gap-2 mb-4">
+                {% if passed %}
+                <a href="{% url 'lesson-detail' lesson.uuid %}" class="btn btn-lg btn-success">
+                    <i class="fas fa-arrow-right"></i> الانتقال إلى الدرس التالي
+                </a>
+                {% else %}
+                <a href="{% url 'quiz-retry' lesson.id %}" class="btn btn-lg btn-primary">
+                    <i class="fas fa-redo"></i> إعادة المحاولة
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'quiz-list' lesson.class_room.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> عرض جميع الاختبارات
+                </a>
+            </div>
+
+            <!-- Learning Tips -->
+            <div class="alert alert-info">
+                <h6>💡 نصائح للتعلم الفعال:</h6>
+                <ul class="mb-0">
+                    <li>راجع الشروحات أعلاه لفهم الإجابات الخاطئة بشكل أعمق</li>
+                    <li>استخدم طريقة الاستدعاء النشط: اختبر نفسك مرة أخرى بعد أسبوع</li>
+                    <li>طبق المفاهيم في مشاريع عملية لتحقيق الترميز العميق</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    [dir="rtl"] .alert {
+        text-align: right;
+    }
+    
+    [dir="rtl"] ul {
+        text-align: right;
+        padding-right: 1.5rem;
+    }
+</style>
+{% endblock %}

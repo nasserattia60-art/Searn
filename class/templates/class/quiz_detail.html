@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5" dir="rtl">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- Header -->
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ quiz.title }}</h4>
+                    <small>{{ lesson.title }}</small>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>عدد الأسئلة:</strong> {{ quiz.get_questions_count }}</p>
+                    <p class="mb-0"><strong>درجة النجاح:</strong> {{ quiz.passing_score }}%</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            {% if not completed %}
+            <div class="progress mb-4" style="height: 25px;">
+                <div class="progress-bar progress-bar-animated" role="progressbar" 
+                     aria-valuenow="{{ attempt.user_responses.count }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="{{ quiz.get_questions_count }}"
+                     style="width: {% widthratio attempt.user_responses.count quiz.get_questions_count 100 %}%">
+                    {{ attempt.user_responses.count }}/{{ quiz.get_questions_count }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Questions Form -->
+            <form method="POST" action="" id="quiz-form">
+                {% csrf_token %}
+                
+                {% for item in questions_with_responses %}
+                <div class="card mb-4 {% if item.response and item.response.is_answered %}border-info{% endif %}">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            السؤال {{ item.question.order }}
+                            {% if item.response and item.response.is_answered %}
+                            <span class="badge badge-info">تمت الإجابة</span>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    
+                    <div class="card-body">
+                        <p class="lead">{{ item.question.question_text }}</p>
+
+                        {% if item.question.question_type == 'multiple_choice' %}
+                        <div class="form-group">
+                            {% for answer in item.question.answers.all %}
+                            <div class="form-check mb-2">
+                                <input 
+                                    class="form-check-input answer-option" 
+                                    type="radio" 
+                                    name="answer_{{ item.question.id }}"
+                                    id="answer_{{ answer.id }}"
+                                    value="{{ answer.id }}"
+                                    data-question="{{ item.question.id }}"
+                                    {% if item.selected_answer_id == answer.id %}checked{% endif %}
+                                >
+                                <label class="form-check-label" for="answer_{{ answer.id }}">
+                                    {{ answer.answer_text }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% elif item.question.question_type == 'true_false' %}
+                        <div class="form-group">
+                            {% for answer in item.question.answers.all %}
+                            <div class="form-check mb-2">
+                                <input 
+                                    class="form-check-input answer-option" 
+                                    type="radio" 
+                                    name="answer_{{ item.question.id }}"
+                                    id="answer_{{ answer.id }}"
+                                    value="{{ answer.id }}"
+                                    data-question="{{ item.question.id }}"
+                                    {% if item.selected_answer_id == answer.id %}checked{% endif %}
+                                >
+                                <label class="form-check-label" for="answer_{{ answer.id }}">
+                                    <strong>{{ answer.answer_text }}</strong>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        {% elif item.question.question_type == 'short_answer' %}
+                        <div class="form-group">
+                            <textarea 
+                                class="form-control short-answer" 
+                                name="short_answer_{{ item.question.id }}"
+                                data-question="{{ item.question.id }}"
+                                rows="3"
+                                placeholder="أكتب إجابتك هنا...">{{ item.free_text_answer }}</textarea>
+                        </div>
+                        {% endif %}
+
+                        <!-- Explanation (shown after answer) -->
+                        {% if item.response and item.response.is_answered %}
+                        <div class="alert alert-info mt-3">
+                            <strong>الشرح:</strong>
+                            <p class="mb-0">{{ item.question.explanation }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Submit Button -->
+                {% if not completed %}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-lg btn-success">
+                        <i class="fas fa-check"></i> إنهاء الاختبار
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <strong>تم إكمال الاختبار</strong>
+                    <p class="mb-0">انظر النتائج أدناه</p>
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'quiz-results' lesson.id %}" class="btn btn-lg btn-success">
+                        <i class="fas fa-eye"></i> عرض النتائج
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle answer submission via AJAX
+    const answerElements = document.querySelectorAll('.answer-option, .short-answer');
+    
+    answerElements.forEach(element => {
+        element.addEventListener('change', function() {
+            const questionId = this.dataset.question;
+            const lessonId = {{ lesson.id }};
+            
+            const formData = new FormData();
+            
+            if (this.classList.contains('answer-option')) {
+                formData.append('answer_id', this.value);
+            } else if (this.classList.contains('short-answer')) {
+                formData.append('text_answer', this.value);
+            }
+            
+            // Submit via AJAX
+            fetch(`/class/lesson/${lessonId}/quiz/response/${questionId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI to show answer is saved
+                    console.log('✓ إجابة محفوظة');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    // Handle form submission
+    document.getElementById('quiz-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Mark all answers as submitted
+        console.log('✓ تم إرسال الاختبار');
+        
+        // Redirect to results
+        window.location.href = `/class/lesson/{{ lesson.id }}/quiz/results/`;
+    });
+});
+</script>
+
+<style>
+    [dir="rtl"] .form-check {
+        padding-left: 1.5rem;
+        padding-right: 0;
+    }
+    
+    [dir="rtl"] .form-check-label {
+        margin-right: 0;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}

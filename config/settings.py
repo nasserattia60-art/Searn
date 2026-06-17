@@ -122,8 +122,20 @@ STATIC_URL = 'static/'
 
 # Auth settings
 LOGIN_URL = '/users/login/'
-LOGIN_REDIRECT_URL = '/users/profile/'
+LOGIN_REDIRECT_URL = '/class/dashboard/'
 
 
 # Email backend for development (prints to console)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+# Google Generative AI (Gemini) Configuration
+# Set GOOGLE_API_KEY environment variable or add it here
+import os
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', '')
+
+# Quiz AI Configuration
+QUIZ_AI_ENABLED = True
+QUIZ_AI_MODEL = 'gemini-1.5-flash'
+QUIZ_DEFAULT_PASSING_SCORE = 70
+QUIZ_DEFAULT_QUESTIONS = 5
